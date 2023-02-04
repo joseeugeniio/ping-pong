@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong - Dev Samurai (joseeugeniio)</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #canvas {
+            cursor: none;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas">
+    </canvas>
+    <script>
+        const canvasEl = document.querySelector("canvas"),
+            canvasCtx = canvasEl.getContext("2d")
+
+        const ww = window.innerWidth
+        const wh = window.innerHeight
+        const lw = 15
+        const gapX = 10
+        const mouse = { x: 0, y: 0 }
+
+        const field = {
+            w: ww,
+            h: wh,
+            draw: function () {
+                canvasCtx.fillStyle = "#201B21"
+                canvasCtx.fillRect(0, 0, ww, wh)
+            }
+        }
+
+        const line = {
+            w: lw,
+            h: wh,
+            draw: function () {
+                canvasCtx.fillStyle = "#3B313D"
+                canvasCtx.fillRect(ww / 2 - this.w / 2, 0, this.w, this.h)
+            }
+        }
+
+        const leftPaddle = {
+            x: gapX,
+            y: 100,
+            w: lw,
+            h: 200,
+            _move: function () {
+                this.y = mouse.y - this.h / 2
+            },
+            draw: function () {
+                canvasCtx.fillStyle = "#66566B"
+                canvasCtx.fillRect(this.x, this.y, lw, this.h)
+                this._move()
+            }
+
+        }
+
+        const rightPaddle = {
+            x: ww - lw - gapX,
+            y: 0,
+            w: lw,
+            h: 200,
+            speed: 3.8,
+            _move: function () {
+                if(this.y + this.h / 2 < ball.y + ball.r){
+                    this.y += this.speed
+                }else {
+                    this.y -= this.speed
+                }
+            },
+            _speedUp: function (){
+                this.speed += 2
+            },
+            draw: function () {
+                canvasCtx.fillStyle = "#66566B"
+                canvasCtx.fillRect(this.x, this.y, lw, this.h)
+                this._move()
+            }
+
+        }
+
+        const score = {
+            human: 0,
+            copmputer: 0,
+            increaseHuman: function () {
+                this.human++
+            },
+            increaseComputer: function () {
+                this.copmputer++
+            },
+            draw: function () {
+                canvasCtx.font = "bold 68px Arial"
+                canvasCtx.textAlign = "center"
+                canvasCtx.textBaseline = "top"
+                canvasCtx.fillStyle = "#3B313D"
+                canvasCtx.fillText(this.human, ww / 4, 50)
+                canvasCtx.fillText(this.copmputer, ww / 4 + ww / 2, 50)
+            }
+        }
+
+        const ball = {
+            x: ww / 2,
+            y: wh /2,
+            r: 20,
+            speed: 3.5,
+            directionX: 1,
+            directionY: 1,
+            _reverseX: function () {
+                this.directionX *= -1
+            },
+            _reverseY: function () {
+                this.directionY *= -1
+            },
+            _calcPosition: function () {
+                if (this.x > ww - this.r - rightPaddle.w - gapX) {
+                    if (
+                        this.y + this.r > rightPaddle.y && this.y - this.r < rightPaddle.y + rightPaddle.h
+                    ) {
+                        this._reverseX()
+                    } else {
+                        score.increaseHuman()
+                        this._pointUp()
+                    }
+                }
+
+                if (this.x < this.r + leftPaddle.w + gapX){
+                    if(this.y + this.r > leftPaddle.y && this.y - this.r < leftPaddle.y + leftPaddle.h){
+                        this._reverseX()
+                    } else {
+                        score.increaseComputer()
+                        this._pointUp()
+                    }
+                }
+
+                if (
+                    (this.y - this.r < 0 && this.directionY < 0) ||
+                    (this.y > wh - this.r && this.directionY > 0)) {
+                    this._reverseY()
+                }
+            },
+            _speedUp: function() {
+                this.speed += 1.2
+            },
+            _pointUp: function () {
+                this._speedUp()
+                rightPaddle._speedUp()
+
+                this.x = ww / 2
+                this.y = wh / 2
+            },
+            _move: function () {
+                this.x += this.directionX * this.speed
+                this.y += this.directionY * this.speed
+            },
+            draw: function () {
+                canvasCtx.fillStyle = "#66566B"
+                canvasCtx.beginPath()
+                canvasCtx.arc(this.x, this.y, this.r, 0, 2 * Math.PI, false)
+                canvasCtx.fill()
+                this._move()
+                this._calcPosition()
+            }
+        }
+
+        function setup() {
+            canvasEl.width = canvasCtx.width = field.w
+            canvasEl.height = canvasCtx.height = field.w
+        }
+
+        function draw() {
+            field.draw()
+            line.draw()
+            leftPaddle.draw()
+            rightPaddle.draw()
+            score.draw()
+            ball.draw()
+            
+        }
+
+        window.animateFrame = (function () {
+            return (
+                window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame ||
+                function (callback) {
+                    return window.setTimeout(callback, 1000 / 60)
+                }
+            )
+        })()
+
+        function main() {
+            animateFrame(main)
+            draw()
+        }
+
+        setup()
+        main()
+
+        canvasEl.addEventListener('mousemove', function (e) {
+            mouse.x = e.pageX
+            mouse.y = e.pageY
+        })
+
+    </script>
+</body>
+
+</html>
